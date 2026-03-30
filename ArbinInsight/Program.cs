@@ -1,15 +1,26 @@
+using ArbinInsight.Data;
+using ArbinInsight.Models.Configuration;
+using ArbinInsight.Services;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddScoped<IMachineDataService, MachineDataService>();
+builder.Services.AddScoped<IRemoteDataService, RemoteDataService>();
+builder.Services.AddScoped<IRemoteDataPublisher, RemoteDataPublisher>();
+builder.Services.AddScoped<IDashboardSyncService, DashboardSyncService>();
+builder.Services.AddScoped<IDashboardQueryService, DashboardQueryService>();
+builder.Services.AddHostedService<RabbitMqDashboardConsumer>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
