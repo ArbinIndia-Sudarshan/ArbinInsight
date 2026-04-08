@@ -1,5 +1,4 @@
 using ArbinInsight.Models;
-using ArbinInsight.Models.Reporting;
 using ArbinInsight.Models.Sync;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,9 +22,6 @@ namespace ArbinInsight.Data
         public DbSet<PublisherNode> PublisherNodes { get; set; }
         public DbSet<InboxMessage> InboxMessages { get; set; }
         public DbSet<DeadLetterMessage> DeadLetterMessages { get; set; }
-        public DbSet<DashboardTestRun> DashboardTestRuns { get; set; }
-        public DbSet<DashboardSubTestRun> DashboardSubTestRuns { get; set; }
-        public DbSet<DashboardLimitRecord> DashboardLimitRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,9 +32,6 @@ namespace ArbinInsight.Data
             modelBuilder.Entity<PublisherNode>().ToTable("PublisherNodes", "sync");
             modelBuilder.Entity<InboxMessage>().ToTable("InboxMessages", "sync");
             modelBuilder.Entity<DeadLetterMessage>().ToTable("DeadLetterMessages", "sync");
-            modelBuilder.Entity<DashboardTestRun>().ToTable("DashboardTestRuns", "reporting");
-            modelBuilder.Entity<DashboardSubTestRun>().ToTable("DashboardSubTestRuns", "reporting");
-            modelBuilder.Entity<DashboardLimitRecord>().ToTable("DashboardLimitRecords", "reporting");
 
             modelBuilder.Entity<MachineData>()
                 .HasIndex(x => new { x.PublisherNodeId, x.MachineId })
@@ -83,27 +76,6 @@ namespace ArbinInsight.Data
             modelBuilder.Entity<PublisherNode>()
                 .HasIndex(x => x.NodeCode)
                 .IsUnique();
-
-            modelBuilder.Entity<DashboardTestRun>()
-                .HasIndex(x => new { x.SourceConnectionName, x.SourceTestKey })
-                .IsUnique();
-
-            modelBuilder.Entity<DashboardSubTestRun>()
-                .HasIndex(x => new { x.SourceConnectionName, x.SourceSubTestKey })
-                .IsUnique();
-
-            modelBuilder.Entity<DashboardLimitRecord>()
-                .HasIndex(x => new { x.SourceConnectionName, x.SourceLimitKey })
-                .IsUnique();
-
-            modelBuilder.Entity<DashboardTestRun>()
-                .HasIndex(x => new { x.PublisherNodeId, x.LastSyncedAtUtc });
-
-            modelBuilder.Entity<DashboardSubTestRun>()
-                .HasIndex(x => new { x.DashboardTestRunId, x.LastSyncedAtUtc });
-
-            modelBuilder.Entity<DashboardLimitRecord>()
-                .HasIndex(x => new { x.DashboardSubTestRunId, x.LastSyncedAtUtc });
 
             modelBuilder.Entity<InboxMessage>()
                 .Property(x => x.ReceivedAtUtc)
@@ -152,24 +124,6 @@ namespace ArbinInsight.Data
                 .WithMany(x => x.TestLists)
                 .HasForeignKey(x => x.MachineDataId)
                 .OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<DashboardSubTestRun>()
-                .HasOne(x => x.DashboardTestRun)
-                .WithMany(x => x.SubTests)
-                .HasForeignKey(x => x.DashboardTestRunId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<DashboardLimitRecord>()
-                .HasOne(x => x.DashboardTestRun)
-                .WithMany(x => x.Limits)
-                .HasForeignKey(x => x.DashboardTestRunId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<DashboardLimitRecord>()
-                .HasOne(x => x.DashboardSubTestRun)
-                .WithMany(x => x.Limits)
-                .HasForeignKey(x => x.DashboardSubTestRunId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

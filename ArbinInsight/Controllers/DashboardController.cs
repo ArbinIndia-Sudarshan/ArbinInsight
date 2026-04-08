@@ -1,3 +1,4 @@
+using ArbinInsight.Models.Dashboard;
 using ArbinInsight.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,57 +8,30 @@ namespace ArbinInsight.Controllers
     [ApiController]
     public class DashboardController : ControllerBase
     {
-        private readonly IDashboardSyncService _dashboardSyncService;
-        private readonly IDashboardQueryService _dashboardQueryService;
+        private readonly IDashboardService _dashboardService;
 
-        public DashboardController(IDashboardSyncService dashboardSyncService, IDashboardQueryService dashboardQueryService)
+        public DashboardController(IDashboardService dashboardService)
         {
-            _dashboardSyncService = dashboardSyncService;
-            _dashboardQueryService = dashboardQueryService;
+            _dashboardService = dashboardService;
         }
 
-        [HttpPost("sync")]
-        public async Task<IActionResult> Sync([FromQuery] bool publishToQueue = true, CancellationToken cancellationToken = default)
+        [HttpGet("network")]
+        public async Task<IActionResult> GetNetworkDashboard([FromQuery] DashboardTimeFilter timeFilter = DashboardTimeFilter.Weekly, CancellationToken cancellationToken = default)
         {
-            var result = await _dashboardSyncService.SyncAsync(publishToQueue, cancellationToken);
+            var result = await _dashboardService.GetNetworkDashboardAsync(timeFilter, cancellationToken);
             return Ok(result);
         }
 
-        [HttpGet("summary")]
-        public async Task<IActionResult> Summary(CancellationToken cancellationToken)
+        [HttpGet("machines/{machineId:int}")]
+        public async Task<IActionResult> GetMachineDashboard(int machineId, [FromQuery] DashboardTimeFilter timeFilter = DashboardTimeFilter.Weekly, CancellationToken cancellationToken = default)
         {
-            var result = await _dashboardQueryService.GetSummaryAsync(cancellationToken);
-            return Ok(result);
-        }
+            var result = await _dashboardService.GetMachineDashboardAsync(machineId, timeFilter, cancellationToken);
+            if (result == null)
+            {
+                return NotFound(new { message = $"Machine with id {machineId} not found." });
+            }
 
-        [HttpGet("machines")]
-        public async Task<IActionResult> Machines(CancellationToken cancellationToken)
-        {
-            var result = await _dashboardQueryService.GetMachinesAsync(cancellationToken);
             return Ok(result);
-        }
-
-        [HttpGet("reports/summary")]
-        public async Task<IActionResult> ReportSummary(
-            [FromQuery] DateTime? fromUtc,
-            [FromQuery] DateTime? toUtc,
-            [FromQuery] string? machineCode,
-            CancellationToken cancellationToken)
-        {
-            var result = await _dashboardQueryService.GetReportSummaryAsync(fromUtc, toUtc, machineCode, cancellationToken);
-            return Ok(result);
-        }
-
-        [HttpGet("reports/tests")]
-        public async Task<IActionResult> TestReports(
-            [FromQuery] DateTime? fromUtc,
-            [FromQuery] DateTime? toUtc,
-            [FromQuery] string? machineCode,
-            [FromQuery] string? result,
-            CancellationToken cancellationToken)
-        {
-            var response = await _dashboardQueryService.GetTestReportsAsync(fromUtc, toUtc, machineCode, result, cancellationToken);
-            return Ok(response);
         }
     }
 }

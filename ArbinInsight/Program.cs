@@ -1,5 +1,4 @@
 using ArbinInsight.Data;
-using ArbinInsight.Models.Configuration;
 using ArbinInsight.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,23 +8,31 @@ builder.Services.AddControllers();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddScoped<IMachineDataService, MachineDataService>();
+builder.Services.AddScoped<IMachineOverviewService, MachineOverviewService>();
 builder.Services.AddScoped<IRemoteDataService, RemoteDataService>();
-builder.Services.AddScoped<IRemoteDataPublisher, RemoteDataPublisher>();
-builder.Services.AddScoped<IDashboardSyncService, DashboardSyncService>();
-builder.Services.AddScoped<IDashboardQueryService, DashboardQueryService>();
-builder.Services.AddHostedService<RabbitMqDashboardConsumer>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDashboardUiService, DashboardUiService>();
+builder.Services.AddHostedService<RemoteDataSyncService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseCors("frontend");
 
 app.UseHttpsRedirection();
 
